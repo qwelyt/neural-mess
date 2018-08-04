@@ -4,33 +4,30 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import com.github.qwelyt.neural.layer.HiddenLayer;
-import com.github.qwelyt.neural.layer.InputLayer;
-import com.github.qwelyt.neural.layer.OutputLayer;
+import com.github.qwelyt.neural.layer.LayerManager;
+import com.github.qwelyt.util.Collections;
 
 public final class NeuralNet {
 
-    private final List<HiddenLayer> hiddenLayers;
-    private final InputLayer inputLayer;
-    private final OutputLayer outputLayer;
-    private final int numberOfInputs;
-	private final int numberOfOutputs;
-    private final int numberOfHiddenLayers;
-
-	private NeuralNet(
+    private final LayerManager layerManager;
+    private NeuralNet(
         final int numberOfInputs
         , final int numberOfOutputs
         , final List<Integer> neuronsInLayer
         , final List<Function<Double, Double>> hiddenActivationFunctions
         , final Function<Double, Double> outputActivationFunction
     ) {
-        this.numberOfInputs = numberOfInputs;
-        this.numberOfOutputs = numberOfOutputs;
-        this.numberOfHiddenLayers = neuronsInLayer.size();
+        this.layerManager = new LayerManager(
+            numberOfInputs
+            , neuronsInLayer
+            , hiddenActivationFunctions
+            , numberOfOutputs
+            , outputActivationFunction
+        );
+    }
 
-        this.hiddenLayers = new ArrayList<>();
-        this.inputLayer = new InputLayer(numberOfInputs, ActivationFunctions.LINEAR_1);
-        this.outputLayer = new OutputLayer(numberOfOutputs, outputActivationFunction);
+    public List<Double> calc(final List<Double> input){
+        return layerManager.calc(input);
     }
 
     public static final class Builder {
@@ -41,47 +38,52 @@ public final class NeuralNet {
         private List<Function<Double, Double>> hiddenActivationFunctions = new ArrayList<>();
         private Function<Double, Double> outputActivationFunction = ActivationFunctions.LINEAR_1;
 
-        public Builder inputs(final int numberOfInputs){
+        public Builder inputs(final int numberOfInputs) {
             this.numberOfInputs = numberOfInputs;
             return this;
         }
 
-        public Builder outputs(final int numberOfOutputs){
+        public Builder outputs(final int numberOfOutputs) {
             this.numberOfOutputs = numberOfOutputs;
             return this;
         }
 
-        public Builder hiddenLayers(final int numberOfHiddenLayers){
+        public Builder hiddenLayers(final int numberOfHiddenLayers) {
             this.numberOfHiddenLayers = numberOfHiddenLayers;
             resizeHiddenActivationFunctions(numberOfHiddenLayers);
             resizeNeuronsInLayer(numberOfHiddenLayers);
             return this;
         }
 
-        public Builder neuronsInLayer(final int layer, final int neurons){
-            if(layer > numberOfHiddenLayers){
+        public Builder neuronsInLayer(final int layer, final int neurons) {
+            if (layer > numberOfHiddenLayers) {
                 throw new RuntimeException("Can't assign neurons to a layer that does not exist!");
             }
             this.neuronsInLayer.set(layer, neurons);
             return this;
         }
-        
-		public Builder hiddenActivationFunctions(final Function<Double, Double> hiddenActivationFunctions){
+
+        public Builder hiddenActivationFunctions(final Function<Double, Double> hiddenActivationFunctions) {
             this.hiddenActivationFunctions.add(hiddenActivationFunctions);
             return this;
         }
-        
-        public Builder hiddenActivationFunctions(final int forLayer,final Function<Double, Double> hiddenActivationFunctions ){
+
+        public Builder hiddenActivationFunctions(final List<Function<Double, Double>> hiddenActivationFunctions){
+            this.hiddenActivationFunctions = Collections.copy(hiddenActivationFunctions);
+            return this;
+        }
+
+        public Builder hiddenActivationFunctions(final int forLayer, final Function<Double, Double> hiddenActivationFunctions) {
             this.hiddenActivationFunctions.set(forLayer, hiddenActivationFunctions);
             return this;
         }
-        
-        public Builder outputActivationFunction(final Function<Double, Double> outputActivationFunction){
+
+        public Builder outputActivationFunction(final Function<Double, Double> outputActivationFunction) {
             this.outputActivationFunction = outputActivationFunction;
             return this;
         }
-        
-        public NeuralNet build(){
+
+        public NeuralNet build() {
             return new NeuralNet(
                 numberOfInputs
                 , numberOfOutputs
@@ -93,8 +95,8 @@ public final class NeuralNet {
 
         private void resizeHiddenActivationFunctions(int numberOfHiddenLayers) {
             List<Function<Double, Double>> list = new ArrayList<>(numberOfHiddenLayers);
-            for(int i=0; i<list.size(); ++i){
-                if(hiddenActivationFunctions.size() >= i){
+            for (int i = 0; i < list.size(); ++i) {
+                if (hiddenActivationFunctions.size() >= i) {
                     list.add(i, hiddenActivationFunctions.get(i));
                 } else {
                     list.add(i, ActivationFunctions.LINEAR_1);
@@ -105,8 +107,8 @@ public final class NeuralNet {
 
         private void resizeNeuronsInLayer(int numberOfHiddenLayers) {
             List<Integer> list = new ArrayList<>(numberOfHiddenLayers);
-            for(int i=0; i<list.size(); ++i){
-                if(neuronsInLayer.size() >= i){
+            for (int i = 0; i < list.size(); ++i) {
+                if (neuronsInLayer.size() >= i) {
                     list.add(i, neuronsInLayer.get(i));
                 } else {
                     list.add(i, 1);
@@ -117,4 +119,3 @@ public final class NeuralNet {
     }
 
 }
-    
